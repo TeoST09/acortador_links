@@ -100,6 +100,33 @@ defineProps<{
             </Button>
         </div>
 
+        <div class="grid gap-4">
+            <div
+                class="flex items-center gap-3 text-xs text-muted-foreground"
+                aria-hidden="true"
+            >
+                <span class="h-px flex-1 bg-border" />
+                O continúa con tu correo
+                <span class="h-px flex-1 bg-border" />
+            </div>
+
+            <Button
+                as="a"
+                href="/auth/google"
+                variant="outline"
+                class="w-full"
+                data-test="google-login-button"
+            >
+                <span
+                    class="text-lg font-bold text-[#4285F4]"
+                    aria-hidden="true"
+                >
+                    G
+                </span>
+                Continuar con Google
+            </Button>
+        </div>
+
         <div class="text-center text-sm text-muted-foreground">
             ¿No tienes una cuenta?
             <TextLink :href="register()" :tabindex="5">Regístrate</TextLink>
