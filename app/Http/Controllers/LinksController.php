@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Links;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB; 
 
 class LinksController extends Controller
 {
@@ -200,17 +200,20 @@ class LinksController extends Controller
         return to_route('links.index');
     }
 
-    public function guardarClick(string $code, Request $request)
+    public function guardarClick(string $code, Request $request,)
     {
         $link = Links::query()
             ->where('code', $code)
             ->where('is_active', true)
             ->firstOrFail();
 
+        $ip = $request->ip();
+        $hashedIp = hash_hmac('sha256', $ip, config('app.key'));
+
         if (isset($link)) {
             DB::table('link_clicks')->insert([
                 'link_id' => $link->id,
-                'ip' => $request->ip(),
+                'ip' => $hashedIp,
                 'user_agent' => $request->userAgent(),
                 'clicked_at' => now(),
             ]);

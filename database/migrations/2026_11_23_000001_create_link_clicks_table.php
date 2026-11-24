@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('link_id')->constrained()->cascadeOnDelete();
 
-            $table->string('ip', 45)->nullable();
+            $table->string('ip', 120)->nullable();
             $table->string('user_agent')->nullable();
 
             $table->timestamp('clicked_at')->useCurrent();
