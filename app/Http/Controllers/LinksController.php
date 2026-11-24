@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Links;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Validation\ValidationException;
 
 class LinksController extends Controller
 {
@@ -16,11 +18,10 @@ class LinksController extends Controller
         $validate = $request->validate([
             'search' => ['nullable', 'string'],
         ]);
-    
 
         $trim = trim($validate['search'] ?? '');
 
-        if($trim !== ''){
+        if ($trim !== '') {
             $links = Links::query()
                 ->where('user_id', auth()->id())
                 ->where(function ($query) use ($trim) {
@@ -59,8 +60,6 @@ class LinksController extends Controller
             ])
             ->all();
 
-        
-
         return Inertia::render('links/index', [
             'appUrl' => rtrim(config('app.url'), '/'),
             'links' => $links,
@@ -89,7 +88,9 @@ class LinksController extends Controller
             'title' => $validated['title'] ?? null,
             'is_active' => $validated['is_active'],
             'expires_at' => $validated['expires_at'] ?? null,
-            'password' => $validated['password'] ?? null,
+            'password' => filled($validated['password'] ?? null)
+                ? Hash::make($validated['password'])
+                : null,
         ]);
 
         Inertia::flash('toast', [
@@ -100,10 +101,11 @@ class LinksController extends Controller
         return to_route('links.index');
     }
 
-    public function show(Links $link): Response {
+    public function show(Links $link): Response
+    {
         $user = auth()->user()->id;
 
-        if( $link->user_id !== $user) {
+        if ($link->user_id !== $user) {
             abort(403);
         }
 
@@ -121,17 +123,24 @@ class LinksController extends Controller
         ]);
     }
 
-
     public function edit(Links $link): Response
     {
         $user = auth()->user()->id;
 
-        if( $link->user_id !== $user) {
+        if ($link->user_id !== $user) {
             abort(403);
         }
 
         return Inertia::render('links/edit', [
-            'link' => $link,
+            'link' => [
+                'id' => $link->id,
+                'code' => $link->code,
+                'url' => $link->url,
+                'title' => $link->title,
+                'is_active' => (bool) $link->is_active,
+                'expires_at' => $link->expires_at,
+                'has_password' => filled($link->password),
+            ],
         ]);
     }
 
@@ -139,7 +148,7 @@ class LinksController extends Controller
     {
         $user = auth()->user()->id;
 
-        if( $link->user_id !== $user) {
+        if ($link->user_id !== $user) {
             abort(403);
         }
 
@@ -151,13 +160,18 @@ class LinksController extends Controller
             'password' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $link->update([
+        $attributes = [
             'url' => $validated['url'],
             'title' => $validated['title'] ?? null,
             'is_active' => $validated['is_active'],
             'expires_at' => $validated['expires_at'] ?? null,
-            'password' => $validated['password'] ?? null,
-        ]);
+        ];
+
+        if (filled($validated['password'] ?? null)) {
+            $attributes['password'] = Hash::make($validated['password']);
+        }
+
+        $link->update($attributes);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -171,7 +185,7 @@ class LinksController extends Controller
     {
         $user = auth()->user()->id;
 
-        if( $link->user_id !== $user) {
+        if ($link->user_id !== $user) {
             abort(403);
         }
 
@@ -185,19 +199,56 @@ class LinksController extends Controller
         return to_route('links.index');
     }
 
-    public function redirect(string $code): RedirectResponse
+    public function redirect(string $code): RedirectResponse|Response
     {
-        $link = links::query()
+        $link = Links::query()
             ->where('code', $code)
             ->where('is_active', true)
             ->firstOrFail();
-        
-        if(!$link->is_active || ($link->expires_at === null)) {
-            if(($link->expires_at && $link->expires_at->isPast())){
-                abort(404);
-            }
+
+        if ($link->expires_at?->isPast()) {
+            abort(404);
         }
 
-        return redirect($link->url);
+        if (filled($link->password)) {
+            return Inertia::render('links/password', [
+                'link' => [
+                    'code' => $link->code,
+                    'title' => $link->title,
+                ],
+            ]);
+        }
+
+        return redirect()->away($link->url);
+    }
+
+    public function verifyPassword(Request $request, string $code): RedirectResponse|Response
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'max:255'],
+        ]);
+
+        $link = Links::query()
+            ->where('code', $code)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        if ($link->expires_at?->isPast()) {
+            abort(404);
+        }
+
+        if (!Hash::check($validated['password'], $link->password)) {
+            throw ValidationException::withMessages([
+                'password' => 'Contraseña incorrecta.',
+            ]);
+        }
+
+        return Inertia::render('links/password', [
+            'link' => [
+                'code' => $link->code,
+                'title' => $link->title,
+            ],
+            'redirectUrl' => $link->url,
+        ]);
     }
 }

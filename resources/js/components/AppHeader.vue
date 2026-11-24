@@ -43,10 +43,12 @@ const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
+const isAdmin = computed(() => page.props.auth.user?.role === 2);
+
 const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
-
-const mainNavItems: NavItem[] = [
+    
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -57,7 +59,16 @@ const mainNavItems: NavItem[] = [
         href: '/links',
         icon: Link2,
     },
-];
+    ...(isAdmin.value
+        ? [
+              {
+                  title: 'Admin',
+                  href: '/admin',
+                  icon: Link2,
+              },
+          ]
+        : []),
+]);
 </script>
 
 <template>
