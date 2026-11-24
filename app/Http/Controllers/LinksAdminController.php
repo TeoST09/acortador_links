@@ -6,6 +6,7 @@ use App\Models\Links;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -54,19 +55,24 @@ class LinksAdminController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'code' => ['required', 'string', 'unique:links,code'],
             'url' => ['required', 'url'],
-            'title' => ['nullable', 'string'],
+            'title' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'expires_at' => ['nullable', 'date'],
-            'password' => ['nullable', 'string'],
+            'password' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if (filled($validated['password'] ?? null)) {
-            $validated['password'] = Hash::make($validated['password']);
-        }
-
-        $link = Links::create($validated);
+        Links::create([
+            'user_id' => $request->user()->id,
+            'code' => Str::random(6),
+            'url' => $validated['url'],
+            'title' => $validated['title'] ?? null,
+            'is_active' => $validated['is_active'],
+            'expires_at' => $validated['expires_at'] ?? null,
+            'password' => filled($validated['password'] ?? null)
+                ? Hash::make($validated['password'])
+                : null,
+        ]);
 
         Inertia::flash('toast', [
             'type' => 'success',

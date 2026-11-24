@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['admin'])->group(function () {
         Route::get('/admin', [LinksAdminController::class, 'index'])->name('admin');
+        Route::inertia('/admin/links/create', 'links/admin/create')->name('admin.links.create');
         Route::get('/admin/links/{link}/edit', [LinksAdminController::class, 'edit']);
         Route::put('/admin/links/{link}', [LinksAdminController::class, 'update']);
         Route::post('/admin/links', [LinksAdminController::class, 'store']);
