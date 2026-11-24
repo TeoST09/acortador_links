@@ -97,12 +97,17 @@ function submit() {
                     type="password"
                     autocomplete="new-password"
                     minlength="4"
-                    placeholder="Deja vacío para conservar la actual"
+                    :placeholder="
+                        link.has_password
+                            ? 'Contraseña configurada'
+                            : 'Escribe una contraseña nueva'
+                    "
                 />
                 <p class="text-sm text-muted-foreground">
                     <span v-if="link.has_password">
-                        Este enlace está protegido. Deja el campo vacío para
-                        conservar la contraseña actual.
+                        Ya hay una contraseña configurada. No se puede mostrar;
+                        deja el campo vacío para conservarla o escribe una
+                        nueva para cambiarla.
                     </span>
                     <span v-else>
                         Si agregas una contraseña, debe tener al menos 4
@@ -127,7 +132,7 @@ function submit() {
                     {{ form.processing ? 'Guardando…' : 'Guardar cambios' }}
                 </Button>
                 <Button variant="outline" as-child>
-                    <Link :href="`/links/${link.id}`">Cancelar</Link>
+                    <Link href="/links">Cancelar</Link>
                 </Button>
             </div>
         </form>

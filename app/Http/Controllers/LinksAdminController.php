@@ -24,7 +24,7 @@ class LinksAdminController extends Controller
                 'url' => $link->url,
                 'title' => $link->title,
                 'is_active' => (bool) $link->is_active,
-                'expires_at' => $link->expires_at,
+                'expires_at' => $link->expires_at?->format('Y-m-d\TH:i'),
                 'has_password' => filled($link->password),
             ])
             ->all();
@@ -45,7 +45,7 @@ class LinksAdminController extends Controller
                 'url' => $link->url,
                 'title' => $link->title,
                 'is_active' => (bool) $link->is_active,
-                'expires_at' => $link->expires_at,
+                'expires_at' => $link->expires_at?->format('Y-m-d\TH:i'),
                 'has_password' => filled($link->password),
             ],
         ]);

@@ -6,9 +6,10 @@ use App\Models\Links;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB; 
 
 class LinksController extends Controller
 {
@@ -37,7 +38,7 @@ class LinksController extends Controller
                     'url' => $link->url,
                     'title' => $link->title,
                     'is_active' => (bool) $link->is_active,
-                    'expires_at' => $link->expires_at,
+                    'expires_at' => $link->expires_at?->format('Y-m-d\TH:i'),
                     'has_password' => filled($link->password),
                 ])
                 ->all();
@@ -138,7 +139,7 @@ class LinksController extends Controller
                 'url' => $link->url,
                 'title' => $link->title,
                 'is_active' => (bool) $link->is_active,
-                'expires_at' => $link->expires_at,
+                'expires_at' => $link->expires_at?->format('Y-m-d\TH:i'),
                 'has_password' => filled($link->password),
             ],
         ]);
@@ -199,6 +200,24 @@ class LinksController extends Controller
         return to_route('links.index');
     }
 
+    public function guardarClick(string $code, Request $request,)
+    {
+        $link = Links::query()
+            ->where('code', $code)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        if (isset($link)) {
+            DB::table('link_clicks')->insert([
+                'link_id' => $link->id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'clicked_at' => now(),
+            ]);
+        }
+
+    }
+
     public function redirect(string $code): RedirectResponse|Response
     {
         $link = Links::query()
@@ -219,6 +238,8 @@ class LinksController extends Controller
             ]);
         }
 
+        $this->guardarClick($link->code, $request);
+
         return redirect()->away($link->url);
     }
 
@@ -237,11 +258,13 @@ class LinksController extends Controller
             abort(404);
         }
 
-        if (!Hash::check($validated['password'], $link->password)) {
+        if (! Hash::check($validated['password'], $link->password)) {
             throw ValidationException::withMessages([
                 'password' => 'Contraseña incorrecta.',
             ]);
         }
+
+        $this->guardarClick($link->code, $request);
 
         return Inertia::render('links/password', [
             'link' => [
