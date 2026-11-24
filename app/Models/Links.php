@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Links extends Model
 {
@@ -23,4 +24,9 @@ class Links extends Model
     protected $casts = [
         'expires_at' => 'datetime',
     ];
+
+    public function clicks(): HasMany
+    {
+        return $this->hasMany(LinkClick::class, 'link_id');
+    }
 }

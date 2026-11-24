@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\LinksAdminController;
 use App\Http\Controllers\LinksController;
@@ -12,7 +13,7 @@ Route::post('/link/{code}/password', [LinksController::class, 'verifyPassword'])
     ->name('links.password.verify');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/links', [LinksController::class, 'index'])->name('links.index');
     Route::get('/links/create', [LinksController::class, 'create'])->name('links.create');
